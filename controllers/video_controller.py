@@ -16,7 +16,7 @@ def runvideo(running, isRecording, Xmean, Ymean, XTA, YTA, RTA, Xport, Yport, Xc
     filename = valueTime.strftime('_%Y-%m-%d_%H-%M-%S_trn.avi')
     path = 'C:/Users/Dalmau/Documents/Python Scripts/VideoOutput/'
     pathname = os.path.join(path,filename)
-    print "Create video file "+pathname
+    print("Create video file "+pathname)
     out =  cv2.VideoWriter(pathname,fourcc, 20, (320,240))#cv2.VideoWriter(pathname,fourcc, 20, (640,480))        
     ret2 = False
     fgbg = cv2.createBackgroundSubtractorKNN()
