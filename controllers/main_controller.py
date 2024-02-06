@@ -12,7 +12,7 @@ import numpy as np, scipy.io
 from multiprocessing import Process, Value
 import cv2
 from controllers import video_controller_A
-from controllers.sound_controller_A import sine_tone_EnvA
+from controllers.sound_controller import sine_tone
 import tables
 
 inputmat = tables.open_file('OutputMatrixPorts12Batch.mat')
@@ -31,13 +31,16 @@ cropping = False
 image = []
 board = 0
 
-# Global initial variables
+# Global initial variables:
 ExpDay = 152
 AnimalNumber = 16
 StageLevel = 3
 DrugType = 0  # 0 is no drug, 1 is saline, 2 is muscimol, 3 is saline for CPP, 4 is CPP
 Dose = 0
 taskName = 'Training'  # sys.argv[2]
+
+# Mode and box variables:
+output_index = 3 # Box 1 (Env_A): 3, Box 2 (Env_B): 1
 
 
 def set_Env_contour_and_Port_Locat(event, x, y, flags, param):
@@ -76,6 +79,9 @@ def openWaterPort(pin, timeLength, message):  # any oin number from 22 to 53
 
 
 ################################################################################
+def select_mode():
+    output_index = 3
+
 def main_code():
     # initialize the video stream and allow the camera sensor to warmup
     print("[INFO] taking one picture of the environment...")
@@ -405,7 +411,7 @@ def main_code():
 
         # Trial starts with the tone + small water drop to cue the port
         toneLength = TimeToReachReward
-        p = Process(target=sine_tone_EnvA, args=(toneFreq, toneLength, volume, sample_rate))
+        p = Process(target=sine_tone, args=(toneFreq, toneLength, volume, sample_rate, output_index))
         p.start()
         # Trial starts with tone and light on the correct port
         if extraLedCue > 0:
