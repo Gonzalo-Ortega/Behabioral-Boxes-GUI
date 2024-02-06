@@ -40,7 +40,7 @@ Dose = 0
 taskName = 'Training'  # sys.argv[2]
 
 # Mode and box variables:
-output_index = 3 # Box 1 (Env_A): 3, Box 2 (Env_B): 1
+output_index = 3  # Box 1 (Env_A): 3, Box 2 (Env_B): 1
 
 
 def set_Env_contour_and_Port_Locat(event, x, y, flags, param):
