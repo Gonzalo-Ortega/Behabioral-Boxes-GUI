@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # Import required libraries
 from termcolor import colored
 import pyfirmata
@@ -11,7 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np, scipy.io
 from multiprocessing import Process, Value
 import cv2
-from controllers import video_controller_A
+from controllers import video_controller
 from controllers.sound_controller import sine_tone
 import tables
 
@@ -39,8 +38,30 @@ DrugType = 0  # 0 is no drug, 1 is saline, 2 is muscimol, 3 is saline for CPP, 4
 Dose = 0
 taskName = 'Training'  # sys.argv[2]
 
-# Mode and box variables:
-output_index = 3  # Box 1 (Env_A): 3, Box 2 (Env_B): 1
+# Configuration variables:
+video_num = 0
+toneFreq = 10560
+compensationFactor = (1.25, 2., .83, 2.9, 2.03, .83, 2.73, .8)
+port = 'COM18'
+NumOfRotations = 1
+
+
+def configure(box, mode):
+    global video_num, toneFreq, compensationFactor, port, NumOfRotations
+
+    if box == 1:
+        video_num = 0
+        toneFreq = 10560
+        compensationFactor = (1.25, 2., .83, 2.9, 2.03, .83, 2.73, .8)
+        port = 'COM18'
+        NumOfRotations = 1
+
+    elif box == 2:
+        video_num = 1
+        toneFreq = 7040
+        compensationFactor = (2.5, 1.43, 1.25, 1.43, 1.5, 1.43, 2.5, 1.11)
+        port = 'COM15'
+        NumOfRotations = 2
 
 
 def set_Env_contour_and_Port_Locat(event, x, y, flags, param):
@@ -78,18 +99,14 @@ def openWaterPort(pin, timeLength, message):  # any oin number from 22 to 53
     board.digital[pin].write(0)
 
 
-################################################################################
-def select_mode():
-    output_index = 3
-
 def main_code():
     # initialize the video stream and allow the camera sensor to warmup
     print("[INFO] taking one picture of the environment...")
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture(video_num)
     time.sleep(3.0)
     ret, frame = cap.read()
     # frame = cv2.flip(frame,0)
-    if ret == True:
+    if ret:
         # converting fram in a gray scale picture
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         # gray = cv2.GaussianBlur(gray, (11, 11), 0)
@@ -115,7 +132,6 @@ def main_code():
     ###################################################################################################
     print("[INFO] Loading Arduino")
     # Global variables
-    toneFreq = 10560  # 7040 #4400 #In herzs IMPORTANT: SPEAKER AMPLITUDE AT 30
     toneLength = 1  # in seconds (it doesnt accept fractions of a second)
     volume = 1
     sample_rate = 22050
@@ -126,8 +142,6 @@ def main_code():
     timeLengthWTone = 0.040  # length of open valve during the tone
     timeLengthWReward = 0.085  # 0.025#0.02#Length of the open valve during licking
     probReward = 1  # In general this should be a small number (i.e. 0.25)
-    compensationFactor = (0.65, 0.66, 0.55, 0.69, 3, 0.54, 0.63,
-                          0.45)  # (0.74, 0.79, 0.68, 0.77, 0.88, 0.96, 0.70, 0.79) #(1., 1., 1., 1., 1., 1., 1., 1.)#(1.13, 1.58, 1.33, 1.21, 1.31, 2.25, 1.14, 1.24)
     timeSampling = 0.05  # This could be dictated by the DAQ from minimicroscope
     # Rewarded port must be changed every day for environment A and keep constant for environmnet B
     PhysRewardPortYesterday = int(PortsMatrix[AnimalNumber - 1][ExpDay - 2])
@@ -150,79 +164,30 @@ def main_code():
     EmergencyTime = 10  # minutes after star that if the performance is below 10% the animals get help
 
     # Associate port and board with pyFirmata
-    port = 'COM18'  # this must be changed for every board that is utilized
     board = pyfirmata.ArduinoMega(port)
     # Use iterator thread to avoid buffer overflow
     it = pyfirmata.util.Iterator(board)
     it.start()
     time.sleep(1)
-    # Define i/o pins (giving roles to pins: i.e. d=digital,7=pin number,i=input)
-    lickPin1 = board.get_pin('d:22:i')
-    lickPin2 = board.get_pin('d:24:i')
-    lickPin3 = board.get_pin('d:26:i')
-    lickPin4 = board.get_pin('d:28:i')
-    lickPin5 = board.get_pin('d:30:i')
-    lickPin6 = board.get_pin('d:32:i')
-    lickPin7 = board.get_pin('d:34:i')
-    lickPin8 = board.get_pin('d:36:i')
-    listofPorts = [lickPin1, lickPin2, lickPin3, lickPin4, lickPin5, lickPin6, lickPin7, lickPin8]
+
+    # Define i/o pins (giving roles to pins: i.e. d=digital, 7=pin number, i=input)
+    listofPorts = [board.get_pin('d:22:i'), board.get_pin('d:24:i'), board.get_pin('d:26:i'), board.get_pin('d:28:i'),
+                   board.get_pin('d:30:i'), board.get_pin('d:32:i'), board.get_pin('d:34:i'), board.get_pin('d:36:i')]
     cameraTriggerPin = board.get_pin('d:12:i')
-    outPin1 = 39
-    outPin2 = 41
-    outPin3 = 43
-    outPin4 = 45
-    outPin5 = 47
-    outPin6 = 49
-    outPin7 = 51
-    outPin8 = 53
-    listofValves = [outPin1, outPin2, outPin3, outPin4, outPin5, outPin6, outPin7,
-                    outPin8]  # , outPin2, outPin3, outPin4, outPin5, outPin6, outPin7, outPin8]
-    # Initializing valve state value
-    value1 = False
-    value2 = False
-    value3 = False
-    value4 = False
-    value5 = False
-    value6 = False
-    value7 = False
-    value8 = False
-    listofPortsStates = [value1, value2, value3, value4, value5, value6, value7, value8]
-    # Defining leds Ports
-    ledsPin1 = 23
-    ledsPin2 = 25
-    ledsPin3 = 27
-    ledsPin4 = 29
-    ledsPin5 = 31
-    ledsPin6 = 33
-    ledsPin7 = 35
-    ledsPin8 = 37
-    listofLeds = [ledsPin1, ledsPin2, ledsPin3, ledsPin4, ledsPin5, ledsPin6, ledsPin7,
-                  ledsPin8]  # , ledsPin2, ledsPin3, ledsPin4, ledsPin5, ledsPin6, ledsPin7, ledsPin8]
-    # Initializing leds state value
-    listofLedsStates = [value1, value2, value3, value4, value5, value6, value7, value8]
+    listofValves = [39, 41, 43, 45, 47, 49, 51, 53]
+    listofPortsStates = [False, False, False, False, False, False, False, False]
+    listofLeds = [23, 25, 27, 29, 31, 33, 35, 37]
+    listofLedsStates = [False, False, False, False, False, False, False, False]
+
     # Initializing the state of the animal
     In = False
     Water = False
     # Defining libraries for data storage
-    datatimes = {}
-    datatimes['cueTime'] = []
-    datatimes['timeLickIncorrectPort'] = []
-    datatimes['timeLickCorrectPort'] = []
-    datatimes['IncorrectPortLicked'] = []
-    datatimes['timeErrorPort'] = []  # Licking ports outside the tone
-    datatimes['ErrorPortLicked'] = []
-    datatimes['timeErrorCorrectPort'] = []  # Licking correct ports outside the tone
-    datatimes['expStart'] = []
-    datatimes['waterStart'] = []
-    datatimes['RewNonRewTimeRatio'] = []
-    datatimes['FlagForRecallTest'] = []
-    datatimes['timeDelayCorrectLick'] = []
-    datatimes['correctPortTimeWindow'] = []
-    datatimes['trialsWithHelp'] = []
-    datatimes['TimeSecondPort'] = []
-    datatimes['TimeNoMoreReward'] = []
-    datatimes['timeLickFirstCorrect'] = []
-    datatimes['timeDelayFirstCorrectLick'] = []
+    datatimes = {'cueTime': [], 'timeLickIncorrectPort': [], 'timeLickCorrectPort': [], 'IncorrectPortLicked': [],
+                 'timeErrorPort': [], 'ErrorPortLicked': [], 'timeErrorCorrectPort': [], 'expStart': [],
+                 'waterStart': [], 'RewNonRewTimeRatio': [], 'FlagForRecallTest': [], 'timeDelayCorrectLick': [],
+                 'correctPortTimeWindow': [], 'trialsWithHelp': [], 'TimeSecondPort': [], 'TimeNoMoreReward': [],
+                 'timeLickFirstCorrect': [], 'timeDelayFirstCorrectLick': []}
     dataPlot = {}
     dataPlotAllCorrectPort = []
     dataPlotCorrectPort = []
@@ -240,7 +205,7 @@ def main_code():
     mouseTrajectory['BoxDimentions'] = []
     mouseTrajectory['CorrectPortLocation'] = []
     mouseTrajectory['BoxDimentions'].append((center, radius, 'EnvA'))
-    mouseTrajectory['CorrectPortLocation'].append((prtLoc))
+    mouseTrajectory['CorrectPortLocation'].append(prtLoc)
     mouseTrajectory['TriggerZoneRatio'] = []
     mouseTrajectory['NumTrialsWLightCue'] = []
     mouseTrajectory['Stage'] = []
@@ -256,7 +221,6 @@ def main_code():
     m_1 = []
     # while loop temporal variables
     t_init = time.time()  # we fix the time of the beggining of the experiment
-    NumOfRotations = 1
     RotationFreq = 40. / (NumOfRotations + 1)  # (in minutes)
     NonRewardPeriodStart = 4
     RewNonRewTimeRatio = random.random()  # float(TimesRecallVector[ExpDay-1][0])/10.#10./10. #1./2. #Time Ratio of the experiment until reach rewarded trials
@@ -266,7 +230,7 @@ def main_code():
     aclimTimeLength = .7  # (in minutes)
     SleepTime = 0  # in seconds
     expLength = aclimTimeLength + RotationFreq * (NumOfRotations + 1)
-    t_end = t_init + 60 * expLength + SleepTime * (NumOfRotations)  # we fix the total length of the experiment
+    t_end = t_init + 60 * expLength + SleepTime * NumOfRotations  # we fix the total length of the experiment
     timeFirstEntry = t_init
     timeFirstEntry2 = t_init
     cueTime = t_init
@@ -274,10 +238,10 @@ def main_code():
     timeLastRotation = t_init
     # Size of triggering zone
     PercenRadiusDisc = 0.23
-    mouseTrajectory['TriggerZoneRatio'].append((PercenRadiusDisc))
-    mouseTrajectory['Stage'].append((StageLevel))
-    mouseTrajectory['DrugType'].append((DrugType))
-    mouseTrajectory['TimeBefEndNoRew'].append((TimeBefEndNoRew))
+    mouseTrajectory['TriggerZoneRatio'].append(PercenRadiusDisc)
+    mouseTrajectory['Stage'].append(StageLevel)
+    mouseTrajectory['DrugType'].append(DrugType)
+    mouseTrajectory['TimeBefEndNoRew'].append(TimeBefEndNoRew)
     TriggeringZoneRadius = radius * PercenRadiusDisc  # radius*4/5
 
     # transforming water port location from cartesian to polar coordinates
@@ -320,7 +284,7 @@ def main_code():
 
     # MAIN LOOP STARTS HERE##############################################################
     # Video recording variables....
-    p1 = Process(target=video_controller_A.runvideo,
+    p1 = Process(target=video_controller.runvideo,
                  args=(running, isRecording, Xmean, Ymean, XTA, YTA, RTA, Xport, Yport, Xcirc, Ycirc,
                        Rcirc,))  # Process(target=runvideo, args=(running, Xmean, Ymean, XTA, YTA, RTA, TrajLastTrial, ))
     p1.start()
@@ -355,7 +319,7 @@ def main_code():
             print('[INFO] Second Port',
                   SecondPort)  # colored('[INFO] Turn off the light Rotate environment in (SleepTime) seconds, then turn on the light again','green')
             PhysRewardPort = SecondPhysRewardPort[rot]
-            rot = rot + 1;
+            rot = rot + 1
             datatimes['TimeSecondPort'].append(time.time())
         # Setting the flag for light on the correct port
         if len(datatimes['cueTime']) < NumTrialsWLightCue:
@@ -411,7 +375,7 @@ def main_code():
 
         # Trial starts with the tone + small water drop to cue the port
         toneLength = TimeToReachReward
-        p = Process(target=sine_tone, args=(toneFreq, toneLength, volume, sample_rate, output_index))
+        p = Process(target=sine_tone, args=(toneFreq, toneLength, volume, sample_rate))
         p.start()
         # Trial starts with tone and light on the correct port
         if extraLedCue > 0:
@@ -453,20 +417,16 @@ def main_code():
                     if Water is False:
                         if (t_init + 60.0 * (
                                 ((NonRewardPeriodStart) * RewNonRewTimeRatio) + aclimTimeLength)) < time.time():
-                            datatimes['waterStart'].append((time.time(),
-                                                            1))  # Second variable equal to 1 if time is more than RewNonRewTimeRatio of the experiment
+                            datatimes['waterStart'].append((time.time(), 1))  # Second variable equal to 1 if time is more than RewNonRewTimeRatio of the experiment
                         else:
-                            datatimes['waterStart'].append((time.time(),
-                                                            2))  # Second variable equal to 2 if trial number is larger than RewNonRewMinTrials
-                            datatimes['TimeNoMoreReward'].append((time.time(),
-                                                                  1))  # Second variable equal to 1 if time is more than RewNonRewTimeRatio of the experiment
+                            datatimes['waterStart'].append((time.time(), 2))  # Second variable equal to 2 if trial number is larger than RewNonRewMinTrials
+                            datatimes['TimeNoMoreReward'].append((time.time(), 1))  # Second variable equal to 1 if time is more than RewNonRewTimeRatio of the experiment
                         Water = True
                         FirstTrialWithWater = len(datatimes['cueTime'])
                         print(colored('[INFO] WATER IS DELIVERED FROM NOW ON', 'blue'))
                     if Water is True:
                         if (t_init + 60 * (expLength + aclimTimeLength - TimeBefEndNoRew)) < time.time():
-                            datatimes['TimeNoMoreReward'].append((time.time(),
-                                                                  0))  # Second variable equal to 2 if trial number is larger than RewNonRewMinTrials
+                            datatimes['TimeNoMoreReward'].append((time.time(), 0))  # Second variable equal to 2 if trial number is larger than RewNonRewMinTrials
                             Water = False
                             print(colored('[INFO] END OF REWARDED PERIOD', 'red'))
                     # dataPlotCorrectPort=[]
@@ -481,7 +441,7 @@ def main_code():
                     datatimes['timeDelayFirstCorrectLick'].append(time.time() - cueTime)
                     FirstCorrect = True
                     # Reset Port state to exit loop
-            if time.time() < (t_init + 60 * ((NonRewardPeriodStart) * RewNonRewTimeRatio + aclimTimeLength)):
+            if time.time() < (t_init + 60 * (NonRewardPeriodStart * RewNonRewTimeRatio + aclimTimeLength)):
                 listofPortsStates[PhysRewardPort - 1] = False
         board.digital[pinLight].write(0)
         # Save the first lick on the correct port for all trials
@@ -491,10 +451,8 @@ def main_code():
             centerDiskX = center[0]  # -np.sin(finalAngle)*randRadius
             centerDiskY = center[1]  # +np.cos(finalAngle)*randRadius
         else:
-            randRadius = r = (radius - TriggeringZoneRadius) * np.sqrt(
-                random.random())  # random.random()*(radius-TriggeringZoneRadius)
-            randAngle = random.random() * 2 * np.pi * (
-                    1 - ProhAngleProp)  # substracting the 10% of the total circuference to avoid trigger zones close to the water port
+            randRadius = r = (radius - TriggeringZoneRadius) * np.sqrt(random.random())  # random.random()*(radius-TriggeringZoneRadius)
+            randAngle = random.random() * 2 * np.pi * (1 - ProhAngleProp)  # substracting the 10% of the total circuference to avoid trigger zones close to the water port
             finalAngle = ProhAngleProp * np.pi + PrtLocAngle + randAngle
             centerDiskX = center[0] - np.cos(finalAngle) * randRadius
             centerDiskY = center[1] + np.sin(finalAngle) * randRadius
@@ -510,18 +468,13 @@ def main_code():
 
         # Plotting partial results
         dataPlotTrials.append(len(datatimes['cueTime']))  # Total number of trials
-        dataPlotErrorPort.append(
-            len(datatimes['timeErrorPort']))  # number of trials where lick was outside the licking time window
-        dataPlotCorrectPort.append(len(datatimes[
-                                           'timeLickFirstCorrect']))  # number of trials where one lick was achieved during the tone (only the first)
-        dataPlotAllCorrectPort.append(
-            len(datatimes['timeLickCorrectPort']))  # number of licks were achieved during the tone
+        dataPlotErrorPort.append(len(datatimes['timeErrorPort']))  # number of trials where lick was outside the licking time window
+        dataPlotCorrectPort.append(len(datatimes['timeLickFirstCorrect']))  # number of trials where one lick was achieved during the tone (only the first)
+        dataPlotAllCorrectPort.append(len(datatimes['timeLickCorrectPort']))  # number of licks were achieved during the tone
         dataPlotIncorrectPort.append(len(datatimes['timeLickIncorrectPort']))  # number of lickes in the incorrect port
-        dataPlotErrorCorrectPort.append(
-            len(datatimes['timeErrorCorrectPort']))  # number of trials where lick was outside the licking time window
+        dataPlotErrorCorrectPort.append(len(datatimes['timeErrorCorrectPort']))  # number of trials where lick was outside the licking time window
         # dataPlotIncorrectInCorrectTrials.append(len(datatimes['IncorrectPortLicked']));
         if 1 < len(datatimes['timeErrorCorrectPort']):
-            XX = []
             XX = [x for x in datatimes['timeErrorCorrectPort'] if
                   datatimes['cueTime'][-1] <= x < (datatimes['cueTime'][-1] + TimeToReachReward)]
             if 0 < len(XX):
@@ -534,21 +487,17 @@ def main_code():
         if len(Aux0) < (MinNumTrials + 1):
             AccumPerf = ([0] * MinNumTrials)
         else:
-            if (datatimes['cueTime'][-1] < datatimes['timeLickCorrectPort'][-1]):
+            if datatimes['cueTime'][-1] < datatimes['timeLickCorrectPort'][-1]:
                 AccumPerf.append((1.0))
             else:
                 AccumPerf.append((0.0))
-        Aux6 = np.array(dataPlotErrorCorrectPort,
-                        dtype='float')  # Accumulative sum of licks in correct port outside the tone (time-window)
+        Aux6 = np.array(dataPlotErrorCorrectPort, dtype='float')  # Accumulative sum of licks in correct port outside the tone (time-window)
         Aux5 = datatimes['timeDelayFirstCorrectLick'][0:(len(datatimes['timeDelayFirstCorrectLick']))]  # Reaction time
-        Aux88 = datatimes['IncorrectPortLicked'][
-                0:(len(datatimes['IncorrectPortLicked']))]  # Index of the incorrect port licked
-        Aux99 = datatimes['ErrorPortLicked'][
-                0:(len(datatimes['ErrorPortLicked']))]  # Index of the incorrect port licked
+        Aux88 = datatimes['IncorrectPortLicked'][0:(len(datatimes['IncorrectPortLicked']))]  # Index of the incorrect port licked
+        Aux99 = datatimes['ErrorPortLicked'][0:(len(datatimes['ErrorPortLicked']))]  # Index of the incorrect port licked
         if (0 < len(datatimes['timeLickCorrectPort'])) and (
-                datatimes['cueTime'][-1] < datatimes['timeLickCorrectPort'][-1]):
-            Aux7 = datatimes['IncorrectPortLicked'][0:(len(datatimes[
-                                                               'IncorrectPortLicked']))]  # np.array(dataPlotIncorrectInCorrectTrials,dtype='float')#Number of incorrect licks during correct trials
+datatimes['cueTime'][-1] < datatimes['timeLickCorrectPort'][-1]):
+            Aux7 = datatimes['IncorrectPortLicked'][0:(len(datatimes['IncorrectPortLicked']))]  # np.array(dataPlotIncorrectInCorrectTrials,dtype='float')#Number of incorrect licks during correct trials
             Aux77 = np.abs(np.diff(Aux7))
             Aux777 = np.where(Aux77 > 0)
             Aux7777 = np.size(Aux777)  # Number of incorrect ports, before correct port
@@ -561,8 +510,7 @@ def main_code():
         FirRatDens = [];
         FirRatDens = np.divide(DistribRate, (np.nansum(np.nansum(DistribRate))));
         m_1 = np.append(m_1, np.nansum(np.nansum(FirRatDens * FirRatDens)));
-        if (1 < len(datatimes['cueTime'])) and (
-                np.mod(len(datatimes['cueTime']), freqPlot) == 0):  # and (1<len(datatimes['timeErrorPort'])):
+        if (1 < len(datatimes['cueTime'])) and (np.mod(len(datatimes['cueTime']), freqPlot) == 0):  # and (1<len(datatimes['timeErrorPort'])):
             kk = kk + 1
             if kk == 1:
                 Aux3 = 1. * dataPlotCorrectPort[0]
@@ -695,8 +643,8 @@ def main_code():
                 plt.show()
                 plt.pause(0.0001)
             # Emergency program behavior for contingency of low performance after 20 trials
-            if (((EmergencyTime * 60 + t_init) < time.time()) and ((Aux1[-1] / Aux0[-1]) < (0.25))):
-                TimeToReachReward = ExtendedTime;
+            if ((EmergencyTime * 60 + t_init) < time.time()) and ((Aux1[-1] / Aux0[-1]) < (0.25)):
+                TimeToReachReward = ExtendedTime
                 datatimes['trialsWithHelp'].append(
                     (kk * freqPlot, ExtendedTime))  # Trial index TimeToReachReward was extended to extra time
                 print("[INFO] RUNNING UNDER THE EMERGENCY PROTOCOL")

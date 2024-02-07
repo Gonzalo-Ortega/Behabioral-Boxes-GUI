@@ -1,31 +1,32 @@
-#!/usr/bin/python
-
-# ENV CHANGES:
-# FOR ENV_A:
-#   compensationFactor = (1.25, 2., .83, 2.9, 2.03, .83, 2.63, .8)
-#   port = 'COM18'
-# FOR ENV_B:
-#   compensationFactor = (2.5, 1.43, 1.25, 1.43, 4., 1.43, 2.5, 1.11)
-#   port = 'COM15'
-
-# Import required libraries
 import pyfirmata
 import time
 from time import sleep
 
-###################################################################################################
+# Configuration variables
+compensationFactor = (1.25, 2., .83, 2.9, 2.03, .83, 2.63, .8)
+port = 'COM18'
 
 # Global variables
-timeLengthWReward = .5  # 1.3 #0.035 #0.025#0.02#Length of the open valve during licking
+timeLengthWReward = .5  # 1.3 #0.035 #0.025 #0.02 #Length of the open valve during licking
 
-# Rewarded port must be changed every day for environment A and keep constant for environmnet B
+# Rewarded port must be changed every day for environment A and keep constant for environment B
 PhysRewardPort = 1  # from 1 to 8 correspond to rewarded port with respect to the arena
 GeographRewardPort = 1  # Each of the numbners between [1,2,3,4,5,6,7,8] correspond o to the 8 geographycal orientations['NE','EE','SE','SS','SO','OO','NO','NN']
 GeographOrientations = ['NE', 'EE', 'SE', 'SS', 'SO', 'OO', 'NO', 'NN']  # One of the following geafrical orientations respect to the box ['','']
 TimeToReachReward = 6  # 10 #Time that the animal has to get the reward
 
 
-def calibrate(port='COM18', compensationFactor=(1.25, 2., .83, 2.9, 2.03, .83, 2.63, .8)):
+def configure(box):
+    global compensationFactor, port
+    if box == 1:
+        compensationFactor = (1.25, 2., .83, 2.9, 2.03, .83, 2.63, .8)
+        port = 'COM18'
+    elif box == 2:
+        compensationFactor = (2.5, 1.43, 1.25, 1.43, 4., 1.43, 2.5, 1.11)
+        port = 'COM15'
+
+
+def calibrate():
     print("[INFO] Loading Arduino")
     # Associate port and board with pyFirmata
     board = pyfirmata.ArduinoMega(port)

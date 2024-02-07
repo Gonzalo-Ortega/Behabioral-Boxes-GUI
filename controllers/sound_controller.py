@@ -1,13 +1,11 @@
-#!/usr/bin/env python
-
-# ENV CHANGES:
-# output_index=3 for Env_A and output_index=1 for Env_B
-
 """Play a fixed frequency sound."""
 from __future__ import division
 import math
-
 from pyaudio import PyAudio  # sudo apt-get install python{,3}-pyaudio
+
+# Configuration variables:
+output_index = 3
+
 
 try:
     from itertools import izip
@@ -16,7 +14,15 @@ except ImportError:  # Python 3
     xrange = range
 
 
-def sine_tone(frequency, duration, volume=1, sample_rate=22050, output_index=3):
+def configure(box):
+    global output_index
+    if box == 1:
+        output_index = 3
+    else:
+        output_index = 1
+
+
+def sine_tone(frequency, duration, volume=1, sample_rate=22050):
     n_samples = int(sample_rate * duration)
     restframes = n_samples % sample_rate
 
