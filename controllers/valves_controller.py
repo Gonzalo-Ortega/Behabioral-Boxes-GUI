@@ -19,10 +19,10 @@ TimeToReachReward = 6  # 10 #Time that the animal has to get the reward
 def configure(box):
     global compensationFactor, port
     if box == 1:
-        compensationFactor = (1.25, 2., .83, 2.9, 2.03, .83, 2.63, .8)
+        compensationFactor = [1.25, 2., .83, 2.9, 2.03, .83, 2.63, .8]
         port = 'COM18'
     elif box == 2:
-        compensationFactor = (2.5, 1.43, 1.25, 1.43, 4., 1.43, 2.5, 1.11)
+        compensationFactor = [2.5, 1.43, 1.25, 1.43, 4., 1.43, 2.5, 1.11]
         port = 'COM15'
 
 

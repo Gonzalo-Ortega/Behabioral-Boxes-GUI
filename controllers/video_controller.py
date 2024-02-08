@@ -5,6 +5,8 @@ import cv2
 import datetime
 import os
 
+
+# Configuration variables:
 video_num = 0
 file_name = '_%Y-%m-%d_%H-%M-%S_trn.avi'
 
