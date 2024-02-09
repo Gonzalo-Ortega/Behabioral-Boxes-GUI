@@ -7,7 +7,9 @@ from controllers import video_controller
 import mat73
 import pickle
 import os
+import shutil
 
+PORTS_MATRIX = []
 PORTS_MATRIX_DIR = 'OutputMatrixPorts12Batch.mat'
 
 
@@ -31,32 +33,43 @@ def display_experiment_tab(data):
         ui.select({1: 'Stage 1', 2: 'Stage 2', 3: 'Stage 3'}, label='Stage', value=3).bind_value(data, 'stage')
         ui.number(label='Drug type', value=0, min=0, format='%.0f').bind_value(data, 'drug_type')
         ui.number(label='Dose', value=0.000, min=0, format='%.3f', step=0.001).bind_value(data, 'dose')
-    with ui.grid(columns=2):
-        ui.markdown('Correct port:')
-        with ui.card():
-            ui.label('').bind_text(data, 'correct_port')
-        ui.markdown('Yesterday\'s port:')
-        with ui.card():
-            ui.label('').bind_text(data, 'yesterdays_port')
+    with ui.row():
+        with ui.grid(columns=2):
+            ui.markdown('Correct port:')
+            with ui.card():
+                ui.label('').bind_text(data, 'correct_port')
+            ui.markdown('Yesterday\'s port:')
+            with ui.card():
+                ui.label('').bind_text(data, 'yesterdays_port')
+        ui.upload(label='Upload a custom port matrix:', max_files=1, on_upload=lambda file: update_port_matrix(file)).tooltip(
+            'Port matrix is used to compute today and yesterday\'s correct ports')
 
 
 def display_gui():
+    global PORTS_MATRIX
+    PORTS_MATRIX = mat73.loadmat(PORTS_MATRIX_DIR)
     data = load_data()
 
     ui.markdown('### Behavioral Boxes GUI')
     ui.markdown('Enter the desired configuration and select the running mode:')
     with ui.row():
+        with ui.link(target='https://github.com/Gonzalo-Ortega/Behavioral-Boxes-GUI'):
+            ui.image('mice.png').classes('w-20').tooltip('GUI source code!')
         with ui.card():
             with ui.row():
                 ui.select({1: 'Box 1', 2: 'Box 2', 3: 'Box 3'}, label='Box', value=1).bind_value(data, 'box')
                 ui.select({0: 'Calibrate', 1: 'Train', 2: 'Recall'}, label='Mode', value=1).bind_value(data, 'mode')
         with ui.column():
-            ui.button('Save', icon='save', on_click=lambda: save_data(data))
-            ui.button('Run', icon='play_circle_outline', on_click=lambda: run_experiment(data))
+            ui.button('Save', icon='save', on_click=lambda: save_data(data)).tooltip(
+                'Save changed data before running')
+            ui.button('Run', icon='play_circle_outline', on_click=lambda: run_experiment(data)).tooltip(
+                'Run selected mode')
     ui.separator()
     with ui.tabs() as tabs:
-        calibrate = ui.tab('Calibration')
-        experiment = ui.tab('Train or recall')
+        calibrate = ui.tab('Calibration').tooltip(
+            'Change parameters for vale\'s calibration')
+        experiment = ui.tab('Train or recall').tooltip(
+            'Change parameters for train or recall modes')
     with ui.tab_panels(tabs, value=experiment):
         with ui.tab_panel(calibrate):
             with ui.card():
@@ -66,22 +79,27 @@ def display_gui():
                 display_experiment_tab(data)
 
 
+def update_port_matrix(file):
+    global PORTS_MATRIX
+    PORTS_MATRIX = mat73.loadmat(file.content)
+    ui.notify(f'Ports matrix changed to: {file.name}')
+
+
 def update_ports(data):
-    port_matrix = mat73.loadmat(PORTS_MATRIX_DIR)
     day = int(data['exp_day'])
     animal = int(data['animal_number'])
-    if day > len(port_matrix['A']):
+    if day > len(PORTS_MATRIX['A']):
         ui.notify('Experiment day out of range.')
         data['correct_port'] = '-'
         data['yesterdays_port'] = '-'
-    elif animal > len(port_matrix['A'][day - 1]):
+    elif animal > len(PORTS_MATRIX['A'][day - 1]):
         ui.notify('Animal number out of range.')
         data['correct_port'] = '-'
         data['yesterdays_port'] = '-'
     else:
-        data['correct_port'] = port_matrix['A'][day - 1][animal - 1]
+        data['correct_port'] = PORTS_MATRIX['A'][day - 1][animal - 1]
         if main_controller.ExpDay > 1:
-            data['yesterdays_port'] = port_matrix['A'][day - 2][animal - 1]
+            data['yesterdays_port'] = PORTS_MATRIX['A'][day - 2][animal - 1]
         else:
             data['yesterdays_port'] = 'First day'
 
@@ -136,6 +154,8 @@ def run_experiment(data):
 
 
 def window_config():
+    ui.page_title('Behavioral Boxes')
+
     app.native.window_args['resizable'] = True
     app.native.start_args['debug'] = False
     # ui.run(native=True, window_size=(500, 500), fullsound_controllerreen=False, reload=False, port=native.find_open_port())
