@@ -30,7 +30,8 @@ def display_experiment_tab(data):
     with ui.row():
         ui.number(label='Experiment day', value=1, min=1, format='%.0f').bind_value(data, 'exp_day')
         ui.number(label='Animal Number', value=1, min=1, format='%.0f').bind_value(data, 'animal_number')
-        ui.select({1: 'Stage 1', 2: 'Stage 2', 3: 'Stage 3'}, label='Stage', value=3).bind_value(data, 'stage')
+        ui.select({1: 'Stage 1', 1.2: 'Stage 1.2', 2: 'Stage 2', 2.2: 'Stage 2.2', 3: 'Stage 3', 4: 'Stage 4'},
+                  label='Stage', value=3).bind_value(data, 'stage')
         ui.number(label='Drug type', value=0, min=0, format='%.0f').bind_value(data, 'drug_type')
         ui.number(label='Dose', value=0.000, min=0, format='%.3f', step=0.001).bind_value(data, 'dose')
     with ui.row():
@@ -143,7 +144,7 @@ def run_experiment(data):
         ui.notify('Ready to calibrate!')
     else:
         sound_controller.configure(data['box'])
-        main_controller.configure(data['box'], data['mode'])
+        main_controller.configure(data['box'], data['mode'], data['stage'])
         video_controller.configure(data['box'], data['mode'])
         if data['mode'] == 1:
             ui.notify('Train mode!')
