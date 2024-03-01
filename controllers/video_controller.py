@@ -25,9 +25,9 @@ def configure(box, mode):
         file_name = '_%Y-%m-%d_%H-%M-%S_rec.avi'
 
 
-def runvideo(running, isRecording, Xmean, Ymean, XTA, YTA, RTA, Xport, Yport, Xcirc, Ycirc, Rcirc):
+def run_video(running, isRecording, Xmean, Ymean, XTA, YTA, RTA, Xport, Yport, Xcirc, Ycirc, Rcirc):
     h = None
-    videocap = cv2.VideoCapture(video_num)
+    video_cap = cv2.VideoCapture(video_num)
     time.sleep(1.0)
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
@@ -37,7 +37,6 @@ def runvideo(running, isRecording, Xmean, Ymean, XTA, YTA, RTA, Xport, Yport, Xc
     pathname = os.path.join(path, filename)
     print("Create video file " + pathname)
     out = cv2.VideoWriter(pathname, fourcc, 20, (320, 240))  # cv2.VideoWriter(pathname,fourcc, 20, (640,480))
-    ret2 = False
     fgbg = cv2.createBackgroundSubtractorKNN()
     Xm = np.ones(8)
     Xm[0:8] = Xport.value
@@ -45,18 +44,23 @@ def runvideo(running, isRecording, Xmean, Ymean, XTA, YTA, RTA, Xport, Yport, Xc
     Ym[0:8] = Yport.value
 
     while running.value == 1:
-        ret2, frame = videocap.read()
-        # write the output frame to file
+        ret2, frame = video_cap.read()
+
+        # Write the output frame to file
         if h is None:
             (h, w) = frame.shape[:2]
-        frameSmall = imutils.resize(frame, width=320)  # defaulte frame is H=640,W0720, resize to fit on the screen W=300
-        # write the flipped frame
+        frameSmall = imutils.resize(frame, width=320)
+
+        # Write the flipped frame
         if isRecording.value == 1:
             out.write(frameSmall)
-        # converting frames in a gray scale picture, thresholding and substracting the foreground
+
+        # Converting frames in a gray scale picture, thresholding and subtracting the foreground
         frameBW = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         mouseColor = 0.45 * np.percentile(np.concatenate(frameBW), 10) + 15
-        frameBlur = frameBW  # cv2.GaussianBlur(frame, (21, 21), 0)#Max value foir filter is 21
+
+        # Max value for filter is 21
+        frameBlur = frameBW
         foreGround = fgbg.apply(frameBW)
         tresholdMask = cv2.threshold(frameBlur, int(mouseColor), 255, cv2.THRESH_BINARY)[1]  # threshold 80\
         foreGround[np.nonzero(tresholdMask)] = 0
@@ -97,6 +101,6 @@ def runvideo(running, isRecording, Xmean, Ymean, XTA, YTA, RTA, Xport, Yport, Xc
         if running.value == 0:
             break
     # Release everything if job is finished
-    videocap.release()
+    video_cap.release()
     out.release()
     cv2.destroyAllWindows()
