@@ -131,34 +131,6 @@ def configure(box, selected_mode, stage):
         FlagRandDeliver = True
 
 
-def set_env_contour_and_port_locat(event, x, y):
-    # grab references to the global variables
-    global refPt, cropping, prtLoc
-    # Ff the left mouse button was clicked, record the starting (x, y)
-    # coordinates and indicate that cropping is being performed
-
-    if event == cv2.EVENT_LBUTTONDOWN:
-        refPt = [(x, y)]
-        cropping = True
-
-    # Check to see if the left mouse button was released
-    elif event == cv2.EVENT_LBUTTONUP:
-        # record the ending (x, y) coordinates and indicate that the cropping operation is finished
-        refPt.append((x, y))
-        cropping = False
-        # draw a circle around the region of interest
-        center = np.mean(refPt, 0)
-        radius = np.sqrt(np.sum(np.square(np.diff(refPt, 1)))) / 2
-        cv2.circle(image, (int(round(center[0])), int(round(center[1]))), int(round(radius)), (0, 255, 0),
-                   2)  # cv2.rectangle(image, refPt[0], refPt[1], (0, 255, 0), 2)
-        cv2.imshow("image", image)
-    # if right mouse button is clicked then port location is recorded    
-    if event == cv2.EVENT_RBUTTONDBLCLK:  # cv2.EVENT_LBUTTONDBLCLK:
-        prtLoc = [(x, y)]
-        cv2.circle(image, (prtLoc[0]), 2, (255, 0, 0), 2)  # cv2.rectangle(image, refPt[0], refPt[1], (0, 255, 0), 2)
-        cv2.imshow("image", image)
-
-
 # Define custom function in Python to perform Blink action (opening water port)
 def openWaterPort(pin, timeLength, message):  # any oin number from 22 to 53
     print(message)
@@ -168,9 +140,38 @@ def openWaterPort(pin, timeLength, message):  # any oin number from 22 to 53
 
 
 def main_code():
+    def set_env_contour_and_port_locat(event, x, y, flags, param):  # All arguments required
+        # grab references to the global variables
+        global refPt, cropping, prtLoc
+        # Ff the left mouse button was clicked, record the starting (x, y)
+        # coordinates and indicate that cropping is being performed
+
+        if event == cv2.EVENT_LBUTTONDOWN:
+            refPt = [(x, y)]
+            cropping = True
+
+        # Check to see if the left mouse button was released
+        elif event == cv2.EVENT_LBUTTONUP:
+            # record the ending (x, y) coordinates and indicate that the cropping operation is finished
+            refPt.append((x, y))
+            cropping = False
+            # draw a circle around the region of interest
+            center = np.mean(refPt, 0)
+            radius = np.sqrt(np.sum(np.square(np.diff(refPt, 1)))) / 2
+            cv2.circle(image, (int(round(center[0])), int(round(center[1]))), int(round(radius)), (0, 255, 0),
+                       2)  # cv2.rectangle(image, refPt[0], refPt[1], (0, 255, 0), 2)
+            cv2.imshow("image", image)
+        # if right mouse button is clicked then port location is recorded
+        if event == cv2.EVENT_RBUTTONDBLCLK:  # cv2.EVENT_LBUTTONDBLCLK:
+            print('event3')
+            prtLoc = [(x, y)]
+            cv2.circle(image, (prtLoc[0]), 2, (255, 0, 0),
+                       2)  # cv2.rectangle(image, refPt[0], refPt[1], (0, 255, 0), 2)
+            cv2.imshow("image", image)
+
     # initialize the video stream and allow the camera sensor to warmup
     print("[INFO] taking one picture of the environment...")
-    cap = cv2.VideoCapture(video_num)
+    cap = cv2.VideoCapture(video_num, cv2.CAP_DSHOW)
     time.sleep(3.0)
     ret, frame = cap.read()
     # frame = cv2.flip(frame,0)

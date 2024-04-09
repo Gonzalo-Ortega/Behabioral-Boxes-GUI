@@ -147,8 +147,10 @@ def run_experiment(data):
         main_controller.configure(data['box'], data['mode'], data['stage'])
         video_controller.configure(data['box'], data['mode'])
         if data['mode'] == 1:
+            main_controller.main_code()
             ui.notify('Train mode!')
         elif data['mode'] == 2:
+            main_controller.main_code()
             ui.notify('Recall mode!')
         else:
             ui.notify('ERROR')
