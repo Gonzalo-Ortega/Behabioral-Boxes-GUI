@@ -27,6 +27,7 @@ def sound(frequency, volume, sample_rate, sample):
 
 
 def sine_tone(frequency, duration, volume=1, sample_rate=22050):
+    print('[AUDIO] Tone')
     n_samples = int(sample_rate * duration)
     rest_frames = n_samples % sample_rate
 

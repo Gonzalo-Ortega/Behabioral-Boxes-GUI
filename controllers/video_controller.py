@@ -35,7 +35,7 @@ def run_video(running, isRecording, Xmean, Ymean, XTA, YTA, RTA, Xport, Yport, X
     filename = valueTime.strftime('_%Y-%m-%d_%H-%M-%S_trn.avi')
     path = 'video_output'
     pathname = os.path.join(path, filename)
-    print("Create video file " + pathname)
+    print('[OUT] Create video file: ' + pathname)
     out = cv2.VideoWriter(pathname, fourcc, 20, (320, 240))  # cv2.VideoWriter(pathname,fourcc, 20, (640,480))
     fgbg = cv2.createBackgroundSubtractorKNN()
     Xm = np.ones(8)

@@ -116,9 +116,9 @@ class MainController:
             self.extraRewardWStart = False
             self.FlagRandDeliver = True
 
-    # Define custom function in Python to perform Blink action (opening water self.port)
+    # Define custom function in Python to perform Blink action (opening water port)
     def _open_water_port(self, pin, timeLength, message):  # any oin number from 22 to 53
-        print(message)
+        print(f'[PORT] {message}')
         self.board.digital[pin].write(1)
         sleep(timeLength)
         self.board.digital[pin].write(0)
@@ -129,11 +129,13 @@ class MainController:
             # coordinates and indicate that self.cropping is being performed
 
             if event == cv2.EVENT_LBUTTONDOWN:
+                print('[EVENT] Button down')
                 self.refPt = [(x, y)]
                 self.cropping = True
 
             # Check to see if the left mouse button was released
             elif event == cv2.EVENT_LBUTTONUP:
+                print('[EVENT] Button up')
                 # record the ending (x, y) coordinates and indicate that the self.cropping operation is finished
                 self.refPt.append((x, y))
                 self.cropping = False
@@ -143,16 +145,16 @@ class MainController:
                 cv2.circle(self.image, (int(round(center[0])), int(round(center[1]))), int(round(radius)), (0, 255, 0),
                            2)  # cv2.rectangle(self.image, self.refPt[0], self.refPt[1], (0, 255, 0), 2)
                 cv2.imshow("self.image", self.image)
-            # if right mouse button is clicked then self.port location is recorded
+            # if right mouse button is clicked then port location is recorded
             if event == cv2.EVENT_RBUTTONDBLCLK:  # cv2.EVENT_LBUTTONDBLCLK:
-                print('event3')
+                print('[EVENT] Right doble click')
                 self.prtLoc = [(x, y)]
                 cv2.circle(self.image, (self.prtLoc[0]), 2, (255, 0, 0),
                            2)  # cv2.rectangle(self.image, self.refPt[0], self.refPt[1], (0, 255, 0), 2)
                 cv2.imshow("self.image", self.image)
 
         # initialize the video stream and allow the camera sensor to warmup
-        print("[INFO] taking one picture of the environment...")
+        print("[INFO] Taking one picture of the environment...")
         cap = cv2.VideoCapture(self.video_num, cv2.CAP_DSHOW)
         time.sleep(3.0)
         ret, frame = cap.read()
@@ -176,8 +178,8 @@ class MainController:
         # Save data for next step
         center = np.mean(self.refPt, 0)
         radius = np.sqrt(np.sum(np.square(np.diff(self.refPt, 1)))) / 2
-        print("[INFO] giving values to: Arenas center =", center, ", Arenas radius =", radius)
-        print("[INFO] self.port locations =", self.prtLoc[0])
+        print("[INFO] Giving values to: Arenas center =", center, ", Arenas radius =", radius)
+        print("[INFO] Port locations =", self.prtLoc[0])
         # Release everything if job is finished
         cv2.destroyAllWindows()
         ###################################################################################################
@@ -216,14 +218,15 @@ class MainController:
         # Three minutes before the end of the experiment with no reward:
         TimeBefEndNoRew = 0
 
-        # Extended time to reach reward in case animals do not reach the rewarded self.port in the self.TimeToReachReward time:
+        # Extended time to reach reward in case animals do not reach the rewarded port in the self.TimeToReachReward time:
         ExtendedTime = 20
 
         # Minutes after star that if the performance is below 10% the animals get help:
         EmergencyTime = 10
 
-        # Associate self.port and self.board with pyFirmata:
+        # Associate port and board with pyFirmata:
         self.board = pyfirmata.ArduinoMega(self.port)
+        print('[INFO] Arduino ready, plug cable')
 
         # Use iterator thread to avoid buffer overflow:
         it = pyfirmata.util.Iterator(self.board)
@@ -265,7 +268,7 @@ class MainController:
         mouseTrajectory = {'traj': [], 'trigerZone': [], 'trigerTime': [], 'BoxDimentions': [(center, radius, 'EnvA')],
                            'CorrectPortLocation': [self.prtLoc], 'TriggerZoneRatio': [], 'self.NumTrialsWLightCue': [],
                            'Stage': [],
-                           'self.DrugType': [], 'self.Dose': []}
+                           'self.DrugType': [], 'Dose': []}
         if self.mode == 'Train':
             mouseTrajectory.update({'TimeBefEndNoRew': []})
         elif self.mode == 'Recall':
@@ -319,13 +322,13 @@ class MainController:
         if self.mode == 'Train':
             mouseTrajectory['TimeBefEndNoRew'].append(TimeBefEndNoRew)
         elif self.mode == 'Recall':
-            mouseTrajectory['self.Dose'].append((self.Dose))
-            mouseTrajectory['TimeLength'].append((expLength))
-            mouseTrajectory['AcclimatTime'].append((aclimTimeLength))
+            mouseTrajectory['Dose'].append((self.Dose))
+            mouseTrajectory['TimeLength'].append(expLength)
+            mouseTrajectory['AcclimatTime'].append(aclimTimeLength)
 
         TriggeringZoneRadius = radius * self.PercenRadiusDisc
 
-        # Transforming water self.port location from cartesian to polar coordinates:
+        # Transforming water port location from cartesian to polar coordinates:
         self.prtLocAngle = np.arctan2((1. * self.prtLoc[0][1] - 1. * center[1]),
                                       -(1. * self.prtLoc[0][0] - 1. * center[0]))
         if self.prtLocAngle < 0:
@@ -346,7 +349,7 @@ class MainController:
         else:
             randRadius = random.random() * (radius - TriggeringZoneRadius)
 
-            # Subtracting the 10% of the total circumference to avoid trigger zones close to the water self.port
+            # Subtracting the 10% of the total circumference to avoid trigger zones close to the water port
             randAngle = random.random() * 2 * np.pi * (1 - ProhAngleProp)
             finalAngle = ProhAngleProp * np.pi + self.prtLocAngle + randAngle
             centerDiskX = center[0] - np.cos(finalAngle) * randRadius
@@ -400,8 +403,8 @@ class MainController:
         OriginalTime = self.TimeToReachReward
         if self.extraRewardWStart and self.ExpDay == 1:
             for i in range(0, (len(listofValves))):
-                openWaterPort(listofValves[i - 1], timeLengthWTone * self.compensationFactor[i - 1],
-                              "Water drop self.port ")
+                _open_water_port(listofValves[i - 1], timeLengthWTone * self.compensationFactor[i - 1],
+                              "Water drop port ")
         pinLight = listofLeds[PhysRewardPort - 1]
         self.board.digital[pinLight].write(0)
         Aux8 = []
@@ -434,13 +437,12 @@ class MainController:
                 datatimes['TimeSecondPort'].append(time.time())
 
             if (np.mean(AccumPerf[-self.MinNumTrials:]) > self.MinPerf) and (rot < 1):
-                print('[INFO] Second Port',
-                      SecondPort)  # colored('[INFO] Turn off the light Rotate environment in (SleepTime) seconds, then turn on the light again','green')
+                print('[INFO] Second Port', SecondPort)
                 PhysRewardPort = SecondPhysRewardPort[rot]
                 rot = rot + 1
                 datatimes['TimeSecondPort'].append(time.time())
 
-            # Setting the flag for light on the correct self.port
+            # Setting the flag for light on the correct port
             extraLedCue = len(datatimes['cueTime']) < self.NumTrialsWLightCue
 
             # Setting the first trial number with water available
@@ -466,8 +468,8 @@ class MainController:
                 previosrecord = time.time()
                 mouseTrajectory['traj'].append((Xmean.value, Ymean.value, time.time()))
 
-            # Loop that counts licks during the interval between the incorrect self.port is licked and the next trial is started
-            # when the animal steps on the triggering zone.
+            # Loop that counts licks during the interval between the incorrect port is licked and the next trial is
+            # started when the animal steps on the triggering zone.
             # Will run until the next trial starts, just to check animal licking between trials.
             while not In and time.time() < t_end and time.time() < (cueTime + lickTimeWindow):
                 if (previosrecord + 0.01) < time.time():
@@ -481,7 +483,7 @@ class MainController:
                         timeFirstEntry = time.time()
                         datatimes['timeErrorPort'].append(time.time())
                         datatimes['ErrorPortLicked'].append(i + 1)
-                        print('Licking self.port outside the time window =', i + 1, time.time())
+                        print('[ANIMAL] Licking port outside the time window =', i + 1, time.time())
                         if (listofPortsStates[PhysRewardPort - 1] is True):
                             datatimes['timeErrorCorrectPort'].append(time.time())
                 if ((t_init + aclimTimeLength * 60.) < time.time()
@@ -504,6 +506,7 @@ class MainController:
 
             # Trial starts with the tone + small water drop to cue the self.port
             toneLength = self.TimeToReachReward
+            print('[AUDIO] Start process')
             p = Process(target=sine_tone, args=(self.toneFreq, toneLength, volume, sample_rate))
             p.start()
 
@@ -512,19 +515,19 @@ class MainController:
                 self.board.digital[pinLight].write(1)
             datatimes['cueTime'].append(time.time())
             cueTime = time.time()
-            print('cueTime =', time.time())
+            print('[INFO] cueTime =', time.time())
 
             # Small water drop at correct self.port to indicate animal where the reward is obtained
             # (useful for the beginning of the training)
             if self.extraRewardWCue:
-                openWaterPort(listofValves[PhysRewardPort - 1],
+                _open_water_port(listofValves[PhysRewardPort - 1],
                               timeLengthWTone * self.compensationFactor[PhysRewardPort - 1],
-                              "Water drop self.port ")
+                              "Water drop port ")
 
             # Test if animal licks self.port 2 until it detects self.port 1 lick and jump to the next trial
-            listofPortsStates[PhysRewardPort - 1] = False  # listofPorts[PhysRewardPort-1].read()#should be "i" here
+            listofPortsStates[PhysRewardPort - 1] = False
             time.sleep(TimeRead)
-            while (time.time() < t_end) and (listofPortsStates[PhysRewardPort - 1] is False) and (
+            while (time.time() < t_end) and not listofPortsStates[PhysRewardPort - 1] and (
                     time.time() < (cueTime + self.TimeToReachReward)):
                 if (previosrecord + 0.01) < time.time():
                     previosrecord = time.time()
@@ -563,7 +566,8 @@ class MainController:
                                 # Second variable equal to 2 if trial number is larger than RewNonRewMinTrials
                                 datatimes['waterStart'].append((time.time(), 2))
                                 if self.mode == 'train':
-                                    # Second variable equal to 1 if time is more than RewNonRewTimeRatio of the experiment
+                                    # Second variable equal to 1 if time is more than RewNonRewTimeRatio of the
+                                    # experiment
                                     datatimes['TimeNoMoreReward'].append((time.time(), 1))
                             Water = True
                             FirstTrialWithWater = len(datatimes['cueTime'])
@@ -576,9 +580,9 @@ class MainController:
                                 print(colored('[INFO] END OF REWARDED PERIOD', 'red'))
                         # dataPlotCorrectPort=[]
                         if Water:
-                            openWaterPort(listofValves[PhysRewardPort - 1],
+                            _open_water_port(listofValves[PhysRewardPort - 1],
                                           timeLengthWReward * self.compensationFactor[PhysRewardPort - 1],
-                                          "[INFO] Water is been delivered")
+                                          "Water is been delivered")
                             p.terminate()
                             self.board.digital[pinLight].write(0)
                     if not FirstCorrect:
@@ -599,7 +603,7 @@ class MainController:
                 centerDiskY = center[1]
             else:
                 randRadius = (radius - TriggeringZoneRadius) * np.sqrt(random.random())
-                # Subtracting the 10% of the total circumference to avoid trigger zones close to the water self.port
+                # Subtracting the 10% of the total circumference to avoid trigger zones close to the water port
                 randAngle = random.random() * 2 * np.pi * (1 - ProhAngleProp)
                 finalAngle = ProhAngleProp * np.pi + self.prtLocAngle + randAngle
                 centerDiskX = center[0] - np.cos(finalAngle) * randRadius
@@ -615,6 +619,7 @@ class MainController:
             FirstCorrect = False
 
             # Plotting partial results
+
             # Total number of trials:
             dataPlotTrials.append(len(datatimes['cueTime']))
             # Number of trials where lick was outside the licking time window:
@@ -650,9 +655,9 @@ class MainController:
                     AccumPerf = ([0] * self.MinNumTrials)
                 else:
                     if datatimes['cueTime'][-1] < datatimes['timeLickCorrectPort'][-1]:
-                        AccumPerf.append((1.0))
+                        AccumPerf.append(1.0)
                     else:
-                        AccumPerf.append((0.0))
+                        AccumPerf.append(0.0)
 
             # Accumulative sum of licks in correct self.port outside the tone (time-window):
             Aux6 = np.array(dataPlotErrorCorrectPort, dtype='float')
@@ -693,6 +698,7 @@ class MainController:
                     x2 = np.ones(len(Aux5))
                     yCTT = (1. / 8.) * x
                     yRT = 6 * x2
+
                     ax4 = fig.add_subplot(241)
                     ax4.cla()
                     ax4.set_title('Inverse of coverage', fontsize=10)
@@ -711,6 +717,7 @@ class MainController:
                     ax3.set_title('Reaction time', fontsize=10)
                     ax3.plot((np.arange(len(Aux5)) + 1), Aux5, 'bo-', (np.arange(len(Aux5))), yRT, 'b--')
                     ax3.text(2, 1, 'Mean React. Time = {:.2f}'.format(np.mean(Aux5)), fontsize=8)
+
                     ax5 = fig.add_subplot(243)
                     if 1 < kkk:
                         ax5.cla()
@@ -722,6 +729,7 @@ class MainController:
                         ax5.plot((np.arange(len(AuxAccum)) + 1), np.divide(AuxAccum, Aux0[-1]), 'mo-')
                         ax5.text(3.5, 0.05, '#Incorr|Corr. = {:.2f}'.format(np.mean(np.divide(AuxAccum, Aux0[-1]))),
                                  fontsize=8)
+
                     ax1 = fig.add_subplot(245)
                     ax1.cla()
                     for tick in ax1.xaxis.get_major_ticks():
@@ -732,7 +740,6 @@ class MainController:
                     ax1.set_title('Accum Perform. (CT/TT)', fontsize=10)
                     ax1.plot((np.arange(len(Aux1)) + 1), Aux1 / Aux0, 'ko-', (np.arange(len(yCTT)) + 1), yCTT, 'k--')
                     ax1.text(3.5, 0.2, 'Mean Perform. = {:.2f}'.format(np.mean(Aux1 / Aux0)), fontsize=8)
-
                     if self.mode == 'train' and len(Aux0) > 21:
                         ax1.text(3.5, 0.5, 'Perform. last Trials = {:.2f}'.format(
                             np.mean((Aux1[-20:] - Aux1[-21]) / (Aux0[-20:] - Aux0[-21]))), fontsize=8)
@@ -743,14 +750,11 @@ class MainController:
                         tick.label.set_fontsize(8)
                     for tick in ax2.yaxis.get_major_ticks():
                         tick.label.set_fontsize(8)
-
                     if self.mode == 'Train':
                         ax2.axis([0, kk + 1, 0, 1.1 * max(max(Aux00), max(Aux6))])
                     elif self.mode == 'Recall':
                         ax2.axis([0, (len(Aux00) + 1), 0, 3.1 * (max(max(Aux00 / 7), max(Aux6)) + 1.0)])
-
                     ax2.set_title('Accum: #Errors, #Persistant', fontsize=10)
-
                     if self.mode == 'Train':
                         ax2.plot((np.arange(len(Aux00)) + 1), Aux00 / 7, 'ro--', (np.arange(len(Aux6)) + 1), Aux6,
                                  'ko:')
@@ -761,92 +765,92 @@ class MainController:
                                  lw=0.5)
                         ax2.text(4, 200, '#Trials w/H2O = {:.2f}'.format(ww), fontsize=8)
 
-                ax22 = fig.add_subplot(247)
-                ax22.cla()
-                for tick in ax22.xaxis.get_major_ticks():
-                    tick.label.set_fontsize(8)
-                for tick in ax22.yaxis.get_major_ticks():
-                    tick.label.set_fontsize(8)
-                ax22.set_xlim([-4.5, 5.5])
-
-                if self.mode == 'Train':
-                    ax22.set_title('Histogram of Learning', fontsize=10)
-                    if 0 < len(Aux5):
-                        AuxMem = np.concatenate((Aux8, Aux88, np.ones(len(Aux5)) * PhysRewardPort))
-                    else:
-                        AuxMem = np.concatenate((Aux8, Aux88))
-                elif self.mode == 'Recall':
-                    ax22.set_title('Histogram of Recall before water', fontsize=10)
-                    if FirstTrialWithWater < 2:
+                    ax22 = fig.add_subplot(247)
+                    ax22.cla()
+                    for tick in ax22.xaxis.get_major_ticks():
+                        tick.label.set_fontsize(8)
+                    for tick in ax22.yaxis.get_major_ticks():
+                        tick.label.set_fontsize(8)
+                    ax22.set_xlim([-4.5, 5.5])
+                    if self.mode == 'Train':
+                        ax22.set_title('Histogram of Learning', fontsize=10)
                         if 0 < len(Aux5):
-                            AuxMem = np.concatenate((Aux8, Aux88, Aux99, np.ones(len(Aux5)) * PhysRewardPort))
+                            AuxMem = np.concatenate((Aux8, Aux88, np.ones(len(Aux5)) * PhysRewardPort))
                         else:
-                            AuxMem = np.concatenate((Aux8, Aux88, Aux99))
-                    else:
-                        XX00 = [yy for yy in datatimes['timeLickFirstCorrect'] if
-                                yy < (np.array(datatimes['waterStart'])[0, 0])]
-                        XX0 = [y for y in datatimes['timeLickCorrectPort'] if
-                               y < (np.array(datatimes['waterStart'])[0, 0])]
-                        AuxCorr = np.array(np.ones(len(XX0)) * PhysRewardPort, dtype='float')
-                        XX1 = [z for z in datatimes['timeLickIncorrectPort'] if
-                               z < (np.array(datatimes['waterStart'])[0, 0])]
-                        AuxInc = np.array(datatimes['IncorrectPortLicked'])[:(len(XX1))]
-                        XX2 = [w for w in datatimes['timeErrorCorrectPort'] if
-                               w < (np.array(datatimes['waterStart'])[0, 0])]
-                        AuxErrCorr = np.array(np.ones(len(XX2)) * PhysRewardPort, dtype='float')
-                        XX3 = [zz for zz in datatimes['timeErrorPort'] if
-                               zz < (np.array(datatimes['waterStart'])[0, 0])]
-                        AuxErr = np.array(datatimes['ErrorPortLicked'])[:(len(XX3))]
-                        AuxMem = np.concatenate((AuxCorr, AuxInc, AuxErrCorr, AuxErr))
+                            AuxMem = np.concatenate((Aux8, Aux88))
+                    elif self.mode == 'Recall':
+                        ax22.set_title('Histogram of Recall before water', fontsize=10)
+                        if FirstTrialWithWater < 2:
+                            if 0 < len(Aux5):
+                                AuxMem = np.concatenate((Aux8, Aux88, Aux99, np.ones(len(Aux5)) * PhysRewardPort))
+                            else:
+                                AuxMem = np.concatenate((Aux8, Aux88, Aux99))
+                        else:
+                            XX00 = [yy for yy in datatimes['timeLickFirstCorrect'] if
+                                    yy < (np.array(datatimes['waterStart'])[0, 0])]
+                            XX0 = [y for y in datatimes['timeLickCorrectPort'] if
+                                   y < (np.array(datatimes['waterStart'])[0, 0])]
+                            AuxCorr = np.array(np.ones(len(XX0)) * PhysRewardPort, dtype='float')
+                            XX1 = [z for z in datatimes['timeLickIncorrectPort'] if
+                                   z < (np.array(datatimes['waterStart'])[0, 0])]
+                            AuxInc = np.array(datatimes['IncorrectPortLicked'])[:(len(XX1))]
+                            XX2 = [w for w in datatimes['timeErrorCorrectPort'] if
+                                   w < (np.array(datatimes['waterStart'])[0, 0])]
+                            AuxErrCorr = np.array(np.ones(len(XX2)) * PhysRewardPort, dtype='float')
+                            XX3 = [zz for zz in datatimes['timeErrorPort'] if
+                                   zz < (np.array(datatimes['waterStart'])[0, 0])]
+                            AuxErr = np.array(datatimes['ErrorPortLicked'])[:(len(XX3))]
+                            AuxMem = np.concatenate((AuxCorr, AuxInc, AuxErrCorr, AuxErr))
+                    AuxMemMem = np.array(np.mod(AuxMem - PhysRewardPort, 8))
+                    AUX7 = np.where(AuxMemMem == 7)
+                    AuxMemMem[AUX7[0][:]] = -1
+                    AUX6 = np.where(AuxMemMem == 6)
+                    AuxMemMem[AUX6[0][:]] = -2
+                    AUX5 = np.where(AuxMemMem == 5)
+                    AuxMemMem[AUX5[0][:]] = -3
+                    if 0 < len(AuxMemMem):
+                        ax22.hist(AuxMemMem, bins=(-3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5), color='blue')
 
-                AuxMemMem = np.array(np.mod(AuxMem - PhysRewardPort, 8))
-                AUX7 = np.where(AuxMemMem == 7)
-                AuxMemMem[AUX7[0][:]] = -1
-                AUX6 = np.where(AuxMemMem == 6)
-                AuxMemMem[AUX6[0][:]] = -2
-                AUX5 = np.where(AuxMemMem == 5)
-                AuxMemMem[AUX5[0][:]] = -3
-                if 0 < len(AuxMemMem):
-                    ax22.hist(AuxMemMem, bins=(-3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5), color='blue')
-                ax33 = fig.add_subplot(244)
-                ax33.cla()
-                for tick in ax33.xaxis.get_major_ticks():
-                    tick.label.set_fontsize(8)
-                for tick in ax33.yaxis.get_major_ticks():
-                    tick.label.set_fontsize(8)
-                ax33.set_xlim([-4.5, 5.5])
-                if self.mode == 'Train':
-                    ax33.set_title('Histogram of 24 Hrs Recall', fontsize=10)
-                    Aux = np.array(np.mod(Aux11 - PhysRewardPortYesterday, 8))
-                elif self.mode == 'Recall':
-                    ax33.set_title('Histogram of Recall before first trial', fontsize=10)
-                    Aux = np.array(np.mod(Aux11 - PhysRewardPort, 8))
-                AUX7 = np.where(Aux == 7)
-                Aux[AUX7[0][:]] = -1
-                AUX6 = np.where(Aux == 6)
-                Aux[AUX6[0][:]] = -2
-                AUX5 = np.where(Aux == 5)
-                Aux[AUX5[0][:]] = -3
-                ax33.hist(Aux, bins=(-3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5), color='green')
-                ax44 = fig.add_subplot(248)
-                ax44.cla()
-                for tick in ax44.xaxis.get_major_ticks():
-                    tick.label.set_fontsize(8)
-                for tick in ax44.yaxis.get_major_ticks():
-                    tick.label.set_fontsize(8)
-                ax44.set_xlim([-4.5, 5.5])
-                ax44.set_title('Histogram licks On+Off Tone', fontsize=10)
-                AUX = np.array(np.mod(np.concatenate((Aux8, Aux88, Aux99)) - PhysRewardPort, 8))
-                AUX7 = np.where(AUX == 7)
-                AUX[AUX7[0][:]] = -1
-                AUX6 = np.where(AUX == 6)
-                AUX[AUX6[0][:]] = -2
-                AUX5 = np.where(AUX == 5)
-                AUX[AUX5[0][:]] = -3
-                ax44.hist(AUX, bins=(-3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5), color='grey')
+                    ax33 = fig.add_subplot(244)
+                    ax33.cla()
+                    for tick in ax33.xaxis.get_major_ticks():
+                        tick.label.set_fontsize(8)
+                    for tick in ax33.yaxis.get_major_ticks():
+                        tick.label.set_fontsize(8)
+                    ax33.set_xlim([-4.5, 5.5])
+                    if self.mode == 'Train':
+                        ax33.set_title('Histogram of 24 Hrs Recall', fontsize=10)
+                        Aux = np.array(np.mod(Aux11 - PhysRewardPortYesterday, 8))
+                    elif self.mode == 'Recall':
+                        ax33.set_title('Histogram of Recall before first trial', fontsize=10)
+                        Aux = np.array(np.mod(Aux11 - PhysRewardPort, 8))
+                    AUX7 = np.where(Aux == 7)
+                    Aux[AUX7[0][:]] = -1
+                    AUX6 = np.where(Aux == 6)
+                    Aux[AUX6[0][:]] = -2
+                    AUX5 = np.where(Aux == 5)
+                    Aux[AUX5[0][:]] = -3
+                    ax33.hist(Aux, bins=(-3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5), color='green')
 
-                plt.show()
-                plt.pause(0.0001)
+                    ax44 = fig.add_subplot(248)
+                    ax44.cla()
+                    for tick in ax44.xaxis.get_major_ticks():
+                        tick.label.set_fontsize(8)
+                    for tick in ax44.yaxis.get_major_ticks():
+                        tick.label.set_fontsize(8)
+                    ax44.set_xlim([-4.5, 5.5])
+                    ax44.set_title('Histogram licks On+Off Tone', fontsize=10)
+                    AUX = np.array(np.mod(np.concatenate((Aux8, Aux88, Aux99)) - PhysRewardPort, 8))
+                    AUX7 = np.where(AUX == 7)
+                    AUX[AUX7[0][:]] = -1
+                    AUX6 = np.where(AUX == 6)
+                    AUX[AUX6[0][:]] = -2
+                    AUX5 = np.where(AUX == 5)
+                    AUX[AUX5[0][:]] = -3
+                    ax44.hist(AUX, bins=(-3.5, -2.5, -1.5, -0.5, 0.5, 1.5, 2.5, 3.5), color='grey')
+
+                    plt.show()
+                    plt.pause(0.0001)
 
             # Emergency program behavior for contingency of low performance after 20 trials
             if self.mode == 'Train':
@@ -876,7 +880,7 @@ class MainController:
 
         # Building the time stem of the end of the experiment as a string
         valueTime = datetime.datetime.fromtimestamp(timeEndExp)
-        path = 'C:/Users/Dalmau/Documents/Python Scripts/DataOutput/'
+        path = 'data_output'
 
         if self.mode == 'Train':
             name = '_%Y-%m-%d_%H-%M-%S_trn'
