@@ -1,5 +1,5 @@
 from nicegui import app, native, ui
-from controllers import main_controller
+from controllers.main_controller import MainController
 from controllers import sound_controller
 from controllers import valves_controller
 from controllers import video_controller
@@ -99,7 +99,7 @@ def update_ports(data):
         data['yesterdays_port'] = '-'
     else:
         data['correct_port'] = PORTS_MATRIX['A'][day - 1][animal - 1]
-        if main_controller.ExpDay > 1:
+        if data['exp_day'] > 1:
             data['yesterdays_port'] = PORTS_MATRIX['A'][day - 2][animal - 1]
         else:
             data['yesterdays_port'] = 'First day'
@@ -112,11 +112,6 @@ def save_data(data):
         ui.notify(data['compensation_factor'])
 
     elif data['mode'] == 1 or data['mode'] == 2:
-        main_controller.ExpDay = int(data['exp_day'])
-        main_controller.AnimalNumber = int(data['animal_number'])
-        main_controller.StageLevel = data['stage']
-        main_controller.DrugType = data['drug_type']
-        main_controller.Dose = data['dose']
         update_ports(data)
         ui.notify('Saved')
     else:
@@ -143,14 +138,14 @@ def run_experiment(data):
         valves_controller.configure(data['box'])
         ui.notify('Ready to calibrate!')
     else:
+        main_controller = MainController(data)
         sound_controller.configure(data['box'])
-        main_controller.configure(data)
         video_controller.configure(data['box'], data['mode'])
         if data['mode'] == 1:
-            main_controller.main_code()
+            main_controller.run_experiment()
             ui.notify('Train mode!')
         elif data['mode'] == 2:
-            main_controller.main_code()
+            main_controller.run_experiment()
             ui.notify('Recall mode!')
         else:
             ui.notify('ERROR')
