@@ -56,7 +56,24 @@ extraRewardWStart = False
 FlagRandDeliver = True
 
 
-def configure(box, selected_mode, stage):
+def configure(data):
+    box = data['box']
+    selected_mode = data['mode']
+    stage = data['stage']
+
+    input_mat = tables.open_file('OutputMatrixPorts12Batch.mat')
+    PortsMatrix = input_mat.root.A
+    TimesRecallVector = input_mat.root.TimeDelayRecall
+
+
+    global ExpDay, AnimalNumber, StageLevel, DrugType, Dose
+
+    ExpDay = int(data['exp_day'])
+    AnimalNumber = int(data['animal_number'])
+    StageLevel = int(data['stage'])
+    DrugType = int(data['drug_type'])
+    Dose = data['dose']
+
     global video_num, toneFreq, compensationFactor, port
 
     if box == 1:
@@ -80,7 +97,8 @@ def configure(box, selected_mode, stage):
         mode = 'Recall'
         NumOfRotations = 2
 
-    global TimeToReachReward, NumTrialsWLightCue, MinNumTrials, MinPerf, extraRewardWCue, extraRewardWStart, FlagRandDeliver
+    global TimeToReachReward, NumTrialsWLightCue, MinNumTrials, MinPerf, extraRewardWCue, extraRewardWStart,\
+        FlagRandDeliver
 
     if stage == 1:
         TimeToReachReward = 110
@@ -140,6 +158,8 @@ def openWaterPort(pin, timeLength, message):  # any oin number from 22 to 53
 
 
 def main_code():
+    global TimeToReachReward
+
     def set_env_contour_and_port_locat(event, x, y, flags, param):  # All arguments required
         # grab references to the global variables
         global refPt, cropping, prtLoc
@@ -208,7 +228,10 @@ def main_code():
     timeLengthWReward = 0.085  # 0.025#0.02#Length of the open valve during licking
     timeSampling = 0.05  # This could be dictated by the DAQ from mini-microscope
 
+
     # Rewarded port must be changed every day for environment A and keep constant for environment B
+
+
     PhysRewardPortYesterday = int(PortsMatrix[AnimalNumber - 1][ExpDay - 2])
 
     # Port from the box that will be located in the physical position called GeographRewardPort

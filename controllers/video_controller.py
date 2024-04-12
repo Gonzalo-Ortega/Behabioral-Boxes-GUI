@@ -27,13 +27,13 @@ def configure(box, mode):
 
 def run_video(running, isRecording, Xmean, Ymean, XTA, YTA, RTA, Xport, Yport, Xcirc, Ycirc, Rcirc):
     h = None
-    video_cap = cv2.VideoCapture(video_num)
+    video_cap = cv2.VideoCapture(video_num, cv2.CAP_DSHOW)
     time.sleep(1.0)
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     valueTime = datetime.datetime.fromtimestamp(time.time())
     filename = valueTime.strftime('_%Y-%m-%d_%H-%M-%S_trn.avi')
-    path = 'C:/Users/Dalmau/Documents/Python Scripts/VideoOutput/'
+    path = 'video_output'
     pathname = os.path.join(path, filename)
     print("Create video file " + pathname)
     out = cv2.VideoWriter(pathname, fourcc, 20, (320, 240))  # cv2.VideoWriter(pathname,fourcc, 20, (640,480))

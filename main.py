@@ -144,7 +144,7 @@ def run_experiment(data):
         ui.notify('Ready to calibrate!')
     else:
         sound_controller.configure(data['box'])
-        main_controller.configure(data['box'], data['mode'], data['stage'])
+        main_controller.configure(data)
         video_controller.configure(data['box'], data['mode'])
         if data['mode'] == 1:
             main_controller.main_code()
