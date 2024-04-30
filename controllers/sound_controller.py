@@ -17,8 +17,10 @@ def configure(box):
     global output_index
     if box == 1:
         output_index = 3
-    else:
+    elif box == 2:
         output_index = 1
+    elif box == 3:
+        output_index = 2
 
 
 # Previously lambda function s:

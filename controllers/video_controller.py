@@ -18,6 +18,8 @@ def configure(box, mode):
         video_num = 0
     elif box == 2:
         video_num = 1
+    elif box == 3:
+        video_num = 0
 
     if mode == 1:
         file_name = '_%Y-%m-%d_%H-%M-%S_trn.avi'

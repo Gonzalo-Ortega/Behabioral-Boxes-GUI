@@ -18,6 +18,9 @@ def configure(box):
     elif box == 2:
         compensationFactor = [2.5, 1.43, 1.25, 1.43, 4., 1.43, 2.5, 1.11]
         port = 'COM15'
+    elif box == 3:
+        compensationFactor = [2.5, 1.43, 1.25, 1.43, 4., 1.43, 2.5, 1.11]
+        port = 'COM3'
 
 
 def calibrate():

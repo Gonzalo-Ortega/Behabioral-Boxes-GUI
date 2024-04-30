@@ -11,6 +11,7 @@ import shutil
 
 PORTS_MATRIX = []
 PORTS_MATRIX_DIR = 'OutputMatrixPorts12Batch.mat'
+# C:/Users/DALMAU-PC2/AppData/Local/Programs/Python/Python312
 
 
 def display_calibration_tab(data):

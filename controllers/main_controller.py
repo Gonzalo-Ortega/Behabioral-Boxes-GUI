@@ -26,7 +26,6 @@ class MainController:
         self.PortsMatrix = input_mat.root.A
         self.TimesRecallVector = input_mat.root.TimeDelayRecall
 
-
         self.AnimalNames = ["Mouse4103", "Mouse4104", "Mouse4109", "Mouse4110", "Mouse4111", "Mouse4112", "Mouse4113",
                             "Mouse4114", "Mouse4115", "Mouse4117", "Mouse4118", "Mouse4119", "Mouse4120", "Mouse4121",
                             "Mouse4122", "Mouse4123", "Mouse4124", "Mouse4125", "Mouse4126", "Mouse4127", "Mouse4128"]
@@ -58,6 +57,12 @@ class MainController:
             self.toneFreq = 7040
             self.compensationFactor = (2.5, 1.43, 1.25, 1.43, 1.5, 1.43, 2.5, 1.11)
             self.port = 'COM15'
+
+        elif box == 3:
+            self.video_num = 0
+            self.toneFreq = 4400
+            self.compensationFactor = (.91, .83, 2.91, 2.83, 1.43, .83, 1.43, 1.71)
+            self.port = 'COM3'
 
         # Mode variables:
         if selected_mode == 1:
@@ -298,7 +303,7 @@ class MainController:
         if self.FlagRandDeliver:
             RewNonRewTimeRatio = 0
         FirstCorrect = False
-        aclimTimeLength = .7  # In minutes
+        aclimTimeLength = 0.1  # In minutes
         SleepTime = 0  # In seconds
 
         if self.mode == 'Train':
@@ -386,25 +391,25 @@ class MainController:
         print("[INFO] Generating random triggering zone")
 
         datatimes['expStart'].append(time.time())
-        datatimes['GeographPort'] = GeographOrientations[GeographRewardPort]
+        datatimes['GeographPort'] = GeographOrientations[GeographRewardPort - 1]
         datatimes['correctPortTimeWindow'].append((PhysRewardPort, self.TimeToReachReward, GeographRewardPort))
-        datatimes['RewNonRewTimeRatio'].append((RewNonRewTimeRatio))
+        datatimes['RewNonRewTimeRatio'].append(RewNonRewTimeRatio)
 
         if self.mode == 'Train':
-            datatimes['correctPortTimeWindow'].append((SecondPhysRewardPort))
-            datatimes['FlagForRecallTest'].append((self.FlagRandDeliver))
+            datatimes['correctPortTimeWindow'].append(SecondPhysRewardPort)
+            datatimes['FlagForRecallTest'].append(self.FlagRandDeliver)
 
         if self.mode == 'Recall':
-            datatimes['FlagForRecallTest'].append((FlagForRecallTest))
+            datatimes['FlagForRecallTest'].append(FlagForRecallTest)
 
-        mouseTrajectory['self.NumTrialsWLightCue'].append((self.NumTrialsWLightCue))
+        mouseTrajectory['self.NumTrialsWLightCue'].append(self.NumTrialsWLightCue)
         previosrecord = time.time()
         TimeToTriggANewTrial = min(self.TimeToReachReward, 10)
         OriginalTime = self.TimeToReachReward
         if self.extraRewardWStart and self.ExpDay == 1:
             for i in range(0, (len(listofValves))):
-                _open_water_port(listofValves[i - 1], timeLengthWTone * self.compensationFactor[i - 1],
-                              "Water drop port ")
+                self._open_water_port(listofValves[i - 1], timeLengthWTone * self.compensationFactor[i - 1],
+                                      "Water drop port ")
         pinLight = listofLeds[PhysRewardPort - 1]
         self.board.digital[pinLight].write(0)
         Aux8 = []
@@ -520,9 +525,9 @@ class MainController:
             # Small water drop at correct self.port to indicate animal where the reward is obtained
             # (useful for the beginning of the training)
             if self.extraRewardWCue:
-                _open_water_port(listofValves[PhysRewardPort - 1],
-                              timeLengthWTone * self.compensationFactor[PhysRewardPort - 1],
-                              "Water drop port ")
+                self._open_water_port(listofValves[PhysRewardPort - 1],
+                                      timeLengthWTone * self.compensationFactor[PhysRewardPort - 1],
+                                      "Water drop port ")
 
             # Test if animal licks self.port 2 until it detects self.port 1 lick and jump to the next trial
             listofPortsStates[PhysRewardPort - 1] = False
@@ -580,9 +585,9 @@ class MainController:
                                 print(colored('[INFO] END OF REWARDED PERIOD', 'red'))
                         # dataPlotCorrectPort=[]
                         if Water:
-                            _open_water_port(listofValves[PhysRewardPort - 1],
-                                          timeLengthWReward * self.compensationFactor[PhysRewardPort - 1],
-                                          "Water is been delivered")
+                            self._open_water_port(listofValves[PhysRewardPort - 1],
+                                                  timeLengthWReward * self.compensationFactor[PhysRewardPort - 1],
+                                                  "Water is been delivered")
                             p.terminate()
                             self.board.digital[pinLight].write(0)
                     if not FirstCorrect:
