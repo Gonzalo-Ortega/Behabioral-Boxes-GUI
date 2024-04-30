@@ -35,7 +35,6 @@ class MainController:
         self.refPt = []
         self.cropping = False
         self.image = []
-        self.board = 0
         self.PercenRadiusDisc = 0.23
 
         # General variables:
@@ -48,18 +47,21 @@ class MainController:
         # Box variables:
         if box == 1:
             self.video_num = 0
+            self.audio_output_index = 3
             self.toneFreq = 10560
             self.compensationFactor = (1.25, 2., .83, 2.9, 2.03, .83, 2.73, .8)
-            self.port = 'COM18'
+            self.port = 'COM1'
 
         elif box == 2:
             self.video_num = 1
+            self.audio_output_index = 1
             self.toneFreq = 7040
             self.compensationFactor = (2.5, 1.43, 1.25, 1.43, 1.5, 1.43, 2.5, 1.11)
             self.port = 'COM15'
 
         elif box == 3:
             self.video_num = 0
+            self.audio_output_index = 2
             self.toneFreq = 4400
             self.compensationFactor = (.91, .83, 2.91, 2.83, 1.43, .83, 1.43, 1.71)
             self.port = 'COM3'
@@ -67,9 +69,11 @@ class MainController:
         # Mode variables:
         if selected_mode == 1:
             self.mode = 'Train'
+            self.file_name = '_%Y-%m-%d_%H-%M-%S_trn.avi'
             self.NumOfRotations = 1
         else:
             self.mode = 'Recall'
+            self.file_name = '_%Y-%m-%d_%H-%M-%S_rec.avi'
             self.NumOfRotations = 2
 
         # Stage variables:
@@ -159,7 +163,7 @@ class MainController:
                 cv2.imshow("self.image", self.image)
 
         # initialize the video stream and allow the camera sensor to warmup
-        print("[INFO] Taking one picture of the environment...")
+        print(f'[INFO] Taking one picture of the environment {self.video_num}')
         cap = cv2.VideoCapture(self.video_num, cv2.CAP_DSHOW)
         time.sleep(3.0)
         ret, frame = cap.read()
@@ -384,7 +388,7 @@ class MainController:
         # MAIN LOOP STARTS HERE##############################################################
         # Video recording variables....
         p1 = Process(target=video_controller.run_video,
-                     args=(running, isRecording, Xmean, Ymean, XTA, YTA, RTA, Xport, Yport, Xcirc, Ycirc, Rcirc))
+                     args=(running, self.video_num, self.file_name, isRecording, Xmean, Ymean, XTA, YTA, RTA, Xport, Yport, Xcirc, Ycirc, Rcirc))
         p1.start()
 
         print("[INFO] Behavioral experiment starts")
@@ -512,7 +516,7 @@ class MainController:
             # Trial starts with the tone + small water drop to cue the self.port
             toneLength = self.TimeToReachReward
             print('[AUDIO] Start process')
-            p = Process(target=sine_tone, args=(self.toneFreq, toneLength, volume, sample_rate))
+            p = Process(target=sine_tone, args=(self.audio_output_index, self.toneFreq, toneLength, volume, sample_rate))
             p.start()
 
             # Trial starts with tone and light on the correct self.port
@@ -547,7 +551,7 @@ class MainController:
                         timeFirstEntry = time.time()
                         datatimes['timeLickIncorrectPort'].append(time.time())
                         datatimes['IncorrectPortLicked'].append(i + 1)
-                        print('incorrect self.port =', i + 1, time.time())
+                        print('incorrect port =', i + 1, time.time())
                 listofPortsStates[PhysRewardPort - 1] = listofPorts[PhysRewardPort - 1].read()
                 time.sleep(TimeRead)
                 if (listofPortsStates[PhysRewardPort - 1] is True) and ((timeFirstEntry2 + timeSampling) < time.time()):
@@ -555,7 +559,7 @@ class MainController:
                     datatimes['timeLickCorrectPort'].append(time.time())
                     datatimes['timeDelayCorrectLick'].append(time.time() - cueTime)
                     mouseTrajectory['trigerTime'].append(time.time())
-                    print('correct self.port =', PhysRewardPort, time.time())
+                    print('correct port =', PhysRewardPort, time.time())
 
                     if self.mode == 'Train':
                         period = NonRewardPeriodStart

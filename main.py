@@ -140,8 +140,6 @@ def run_experiment(data):
         ui.notify('Ready to calibrate!')
     else:
         main_controller = MainController(data)
-        sound_controller.configure(data['box'])
-        video_controller.configure(data['box'], data['mode'])
         if data['mode'] == 1:
             main_controller.run_experiment()
             ui.notify('Train mode!')

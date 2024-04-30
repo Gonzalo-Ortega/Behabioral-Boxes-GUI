@@ -6,35 +6,15 @@ import datetime
 import os
 
 
-# Configuration variables:
-video_num = 0
-file_name = '_%Y-%m-%d_%H-%M-%S_trn.avi'
-
-
-def configure(box, mode):
-    global video_num, file_name
-
-    if box == 1:
-        video_num = 0
-    elif box == 2:
-        video_num = 1
-    elif box == 3:
-        video_num = 0
-
-    if mode == 1:
-        file_name = '_%Y-%m-%d_%H-%M-%S_trn.avi'
-    elif mode == 2:
-        file_name = '_%Y-%m-%d_%H-%M-%S_rec.avi'
-
-
-def run_video(running, isRecording, Xmean, Ymean, XTA, YTA, RTA, Xport, Yport, Xcirc, Ycirc, Rcirc):
+def run_video(running, video_num, file_name, isRecording, Xmean, Ymean, XTA, YTA, RTA, Xport, Yport, Xcirc, Ycirc, Rcirc):
     h = None
+    print(f'[VIDEO]: {video_num}')
     video_cap = cv2.VideoCapture(video_num, cv2.CAP_DSHOW)
     time.sleep(1.0)
     # Define the codec and create VideoWriter object
     fourcc = cv2.VideoWriter_fourcc(*'MJPG')
     valueTime = datetime.datetime.fromtimestamp(time.time())
-    filename = valueTime.strftime('_%Y-%m-%d_%H-%M-%S_trn.avi')
+    filename = valueTime.strftime(file_name)
     path = 'video_output'
     pathname = os.path.join(path, filename)
     print('[OUT] Create video file: ' + pathname)
